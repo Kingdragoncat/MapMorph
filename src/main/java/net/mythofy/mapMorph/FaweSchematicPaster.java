@@ -1,13 +1,15 @@
 package net.mythofy.mapMorph;
 
-import com.fastasyncworldedit.core.FaweAPI;
 import com.sk89q.worldedit.EditSession;
-import com.sk89q.worldedit.extent.clipboard.io.ClipboardFormat;
-import com.sk89q.worldedit.extent.clipboard.io.ClipboardReader;
+import com.sk89q.worldedit.WorldEdit;
+import com.sk89q.worldedit.bukkit.BukkitAdapter;
 import com.sk89q.worldedit.extent.clipboard.Clipboard;
+import com.sk89q.worldedit.extent.clipboard.io.ClipboardFormats;
+import com.sk89q.worldedit.extent.clipboard.io.ClipboardReader;
+import com.sk89q.worldedit.function.operation.Operation;
+import com.sk89q.worldedit.function.operation.Operations;
 import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.session.ClipboardHolder;
-import com.sk89q.worldedit.world.World;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Sound;
@@ -20,6 +22,7 @@ import org.bukkit.potion.PotionEffectType;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.logging.Level;
@@ -28,7 +31,7 @@ import java.util.stream.Collectors;
 public class FaweSchematicPaster {
 
     /**
-     * Pastes a schematic asynchronously using FAWE, with safety and optimization.
+     * Pastes a schematic asynchronously using WorldEdit, with safety and optimization.
      *
      * @param plugin      The plugin instance (for scheduling callbacks)
      * @param schematic   The schematic file to paste
@@ -42,7 +45,7 @@ public class FaweSchematicPaster {
     }
 
     /**
-     * Pastes a schematic asynchronously using FAWE, with safety, countdown, and fade-to-black.
+     * Pastes a schematic asynchronously using WorldEdit, with safety, countdown, and fade-to-black.
      *
      * @param plugin      The plugin instance (for scheduling callbacks)
      * @param schematic   The schematic file to paste
@@ -55,24 +58,21 @@ public class FaweSchematicPaster {
     public static void pasteSchematicWithCountdown(Plugin plugin, File schematic, String worldName, Location origin, Location safeLoc, int countdown, Consumer<Boolean> onComplete) {
         Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
             try (FileInputStream fis = new FileInputStream(schematic)) {
-                ClipboardFormat format = ClipboardFormat.findByFile(schematic);
+                var format = ClipboardFormats.findByFile(schematic);
                 if (format == null) throw new IllegalArgumentException("Unknown schematic format: " + schematic.getName());
                 ClipboardReader reader = format.getReader(fis);
                 Clipboard clipboard = reader.read();
 
-                World weWorld = FaweAPI.getWorld(worldName);
-                if (weWorld == null) throw new IllegalArgumentException("World not found: " + worldName);
+                org.bukkit.World bukkitWorld = Bukkit.getWorld(worldName);
+                if (bukkitWorld == null) throw new IllegalArgumentException("Bukkit world not found: " + worldName);
 
                 // Calculate schematic region bounds
                 BlockVector3 min = clipboard.getRegion().getMinimumPoint().add(origin.getBlockX(), origin.getBlockY(), origin.getBlockZ());
                 BlockVector3 max = clipboard.getRegion().getMaximumPoint().add(origin.getBlockX(), origin.getBlockY(), origin.getBlockZ());
 
-                org.bukkit.World bukkitWorld = Bukkit.getWorld(worldName);
-                if (bukkitWorld == null) throw new IllegalArgumentException("Bukkit world not found: " + worldName);
-
                 List<Player> playersInRegion = bukkitWorld.getPlayers().stream()
                         .filter(p -> isInRegion(p.getLocation(), min, max))
-                        .collect(Collectors.toList());
+                        .collect(Collectors.toCollection(ArrayList::new));
 
                 // Run countdown on main thread
                 Bukkit.getScheduler().runTask(plugin, () -> {
@@ -98,27 +98,38 @@ public class FaweSchematicPaster {
                         // Remove dropped items in the region
                         List<Entity> items = bukkitWorld.getEntities().stream()
                                 .filter(e -> e instanceof Item && isInRegion(e.getLocation(), min, max))
-                                .collect(Collectors.toList());
+                                .collect(Collectors.toCollection(ArrayList::new));
                         for (Entity item : items) {
                             item.remove();
                         }
 
-                        // Now paste the schematic asynchronously
-                        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+                        // Now paste the schematic on the main thread
+                        Bukkit.getScheduler().runTask(plugin, () -> {
                             boolean success = false;
-                            try (EditSession editSession = FaweAPI.getEditSessionBuilder(weWorld).fastmode(true).build()) {
+                            try {
+                                // Create WorldEdit session
+                                EditSession editSession = WorldEdit.getInstance().newEditSession(
+                                        BukkitAdapter.adapt(bukkitWorld)
+                                );
+                                
+                                // Paste the schematic
                                 BlockVector3 to = BlockVector3.at(origin.getBlockX(), origin.getBlockY(), origin.getBlockZ());
                                 ClipboardHolder holder = new ClipboardHolder(clipboard);
-                                editSession.setReorderMode(EditSession.ReorderMode.MULTI_STAGE);
-                                editSession.enableQueue();
-                                editSession.paste(holder, to, false, false, null);
-                                editSession.flushQueue();
+                                
+                                Operation operation = holder
+                                        .createPaste(editSession)
+                                        .to(to)
+                                        .ignoreAirBlocks(false)
+                                        .build();
+                                
+                                Operations.complete(operation);
+                                editSession.close();
                                 success = true;
                             } catch (Exception e) {
                                 plugin.getLogger().log(Level.SEVERE, "Failed to paste schematic: " + schematic.getName(), e);
                             }
                             boolean finalSuccess = success;
-                            Bukkit.getScheduler().runTask(plugin, () -> onComplete.accept(finalSuccess));
+                            onComplete.accept(finalSuccess);
                         });
                     });
                 });

@@ -1,5 +1,7 @@
 package net.mythofy.mapMorph;
 
+import net.mythofy.mapMorph.api.MapChangeEvent;
+import net.mythofy.mapMorph.api.MapMorphAPI;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.configuration.ConfigurationSection;
@@ -9,15 +11,27 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
+import java.util.function.Supplier;
 
+// Initialize the static API
 public final class MapMorph extends JavaPlugin {
 
     private File mapsFolder;
     private final Deque<String> mapHistory = new ArrayDeque<>();
     private String currentMap = null;
+    private final MapChangeListener mapChangeListener = new MapChangeListener();
 
     @Override
     public void onEnable() {
+        // Initialize the API with this plugin instance
+        try {
+            // Try to initialize the API (static method)
+            MapMorphAPI.init(this);
+            getLogger().info("MapMorph API successfully initialized");
+        } catch (Exception e) {
+            getLogger().severe("Failed to initialize MapMorph API: " + e.getMessage());
+        }
+        
         // Register /mapmorph command
         if (this.getCommand("mapmorph") != null) {
             this.getCommand("mapmorph").setExecutor(new MapMorphCommand(this));
@@ -38,6 +52,54 @@ public final class MapMorph extends JavaPlugin {
             }
         }
 
+        // Set up PlaceholderAPI extension if available
+        if (Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI")) {
+            getLogger().info("PlaceholderAPI found, registering expansion...");
+            try {
+                MapMorphExpansion expansion = new MapMorphExpansion(this);
+                if (expansion.register()) {
+                    getLogger().info("Successfully registered PlaceholderAPI expansion");
+                } else {
+                    getLogger().warning("Failed to register PlaceholderAPI expansion");
+                }
+            } catch (Exception e) {
+                getLogger().warning("Error registering PlaceholderAPI expansion: " + e.getMessage());
+            }
+        } else {
+            getLogger().info("PlaceholderAPI not found, skipping expansion registration");
+        }
+
+        // Set up bStats metrics
+        setupMetrics();
+        
+        getLogger().info("MapMorph enabled with API support! Version " + getDescription().getVersion());
+    }
+    
+    /**
+     * Sets up bStats metrics collection
+     */
+    private void setupMetrics() {
+        try {
+            // bStats metrics (https://bstats.org/plugin/bukkit/MapMorph)
+            int pluginId = 20875; // Replace with your actual plugin ID from bStats
+            org.bstats.bukkit.Metrics metrics = new org.bstats.bukkit.Metrics(this, pluginId);
+            
+            // Add custom charts using the simplest approach compatible with all versions
+            metrics.addCustomChart(new org.bstats.charts.SimplePie("map_count", () -> {
+                int mapCount = listAllMaps().size();
+                return mapCount == 0 ? "None" : 
+                       mapCount < 5 ? "1-4" :
+                       mapCount < 10 ? "5-9" : 
+                       mapCount < 20 ? "10-19" : "20+";
+            }));
+            
+            // Add current rotation mode
+            metrics.addCustomChart(new org.bstats.charts.SimplePie("rotation_mode", this::getRotationMode));
+            
+            getLogger().info("bStats metrics enabled - Thank you for using MapMorph!");
+        } catch (Exception e) {
+            getLogger().warning("Failed to enable bStats metrics: " + e.getMessage());
+        }
     }
 
     @Override
@@ -47,6 +109,15 @@ public final class MapMorph extends JavaPlugin {
     
     public File getMapsFolder() {
         return mapsFolder;
+    }
+    
+    /**
+     * Gets the MapChangeListener to register and unregister callbacks.
+     * 
+     * @return The MapChangeListener instance
+     */
+    public MapChangeListener getMapChangeListener() {
+        return mapChangeListener;
     }
     
     /**
@@ -106,6 +177,9 @@ public final class MapMorph extends JavaPlugin {
             mapHistory.push(currentMap);
         }
         currentMap = newMap;
+        
+        // Notify registered callbacks
+        mapChangeListener.notifyCallbacks(newMap);
     }
 
     /**
@@ -121,6 +195,11 @@ public final class MapMorph extends JavaPlugin {
         String previousMap = mapHistory.pop();
         currentMap = previousMap;
         getLogger().info("Rolled back to previous map: " + previousMap);
+        
+        // Fire event and notify callbacks about the rollback
+        Bukkit.getPluginManager().callEvent(new MapChangeEvent(previousMap));
+        mapChangeListener.notifyCallbacks(previousMap);
+        
         return previousMap;
     }
 

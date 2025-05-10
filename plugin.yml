@@ -1,0 +1,15 @@
+permissions:
+  mapmorph.use:
+    description: Allows use of MapMorph commands.
+    default: op
+  mapmorph.admin:
+    description: Grants access to administrative commands.
+    default: op
+    children:
+      mapmorph.use: true
+  mapmorph.preview:
+    description: Allows using the map preview feature.
+    default: op
+  mapmorph.vote:
+    description: Allows voting for the next map.
+    default: true

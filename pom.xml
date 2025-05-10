@@ -39,6 +39,14 @@
                         <goals>
                             <goal>shade</goal>
                         </goals>
+                        <configuration>
+                            <relocations>
+                                <relocation>
+                                    <pattern>org.bstats</pattern>
+                                    <shadedPattern>net.mythofy.mapmorph.libs.bstats</shadedPattern>
+                                </relocation>
+                            </relocations>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>
@@ -103,6 +111,12 @@
             <version>2.13.1-SNAPSHOT-1098</version>
             <scope>provided</scope>
         </dependency>
+                <dependency>
+            <groupId>org.bstats</groupId>
+            <artifactId>bstats-bukkit</artifactId>
+            <version>3.0.2</version>
+            <scope>compile</scope>
+                </dependency>
 
     </dependencies>
 </project>
