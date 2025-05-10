@@ -1,0 +1,60 @@
+# MapMorph configuration
+
+# Map rotation configuration
+rotation:
+  enabled: true
+  interval_minutes: 10
+  mode: sequential # options: sequential, random, voting
+  maps:
+    - arena1
+    - arena2
+    - arena3
+
+maps:
+  # Example map configuration
+  arena1:
+    # Map event commands
+    commands:
+      on-load:
+        - "say Map {map} loaded!"
+        - "weather clear"
+      on-enter:
+        - "title {player} title Welcome to {map}!"
+        - "effect give {player} speed 5 1"
+      on-leave:
+        - "say {player} left {map}"
+      on-close:
+        - "say Map {map} closed!"
+    teams:
+      red:
+        spawns:
+          1:
+            world: world
+            x: 100.0
+            y: 65.0
+            z: 200.0
+            yaw: 0.0
+            pitch: 0.0
+          2:
+            world: world
+            x: 102.0
+            y: 65.0
+            z: 202.0
+            yaw: 0.0
+            pitch: 0.0
+      blue:
+        spawns:
+          1:
+            world: world
+            x: 150.0
+            y: 65.0
+            z: 250.0
+            yaw: 180.0
+            pitch: 0.0
+          2:
+            world: world
+            x: 152.0
+            y: 65.0
+            z: 252.0
+            yaw: 180.0
+            pitch: 0.0
