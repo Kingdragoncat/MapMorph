@@ -1,6 +1,9 @@
 package net.mythofy.mapMorph.api;
 
 import net.mythofy.mapMorph.MapMorph;
+import net.mythofy.mapMorph.extensions.EconomyHook;
+import net.mythofy.mapMorph.extensions.MapPlayerData;
+import net.mythofy.mapMorph.extensions.PluginIntegrationManager;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
@@ -8,7 +11,9 @@ import org.bukkit.plugin.Plugin;
 
 import java.io.File;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -19,6 +24,9 @@ public class MapMorphAPI {
     
     private static MapMorph plugin;
     private static final Random random = new Random();
+    private static MapPlayerData playerDataManager;
+    private static EconomyHook economyHook;
+    private static PluginIntegrationManager integrationManager;
     
     /**
      * Initializes the API with the plugin instance.
@@ -28,6 +36,9 @@ public class MapMorphAPI {
      */
     public static void init(MapMorph pluginInstance) {
         plugin = pluginInstance;
+        playerDataManager = pluginInstance.getPlayerDataManager();
+        economyHook = new EconomyHook(plugin);
+        integrationManager = new PluginIntegrationManager(plugin);
     }
     
     /**
@@ -144,7 +155,7 @@ public class MapMorphAPI {
         if (plugin == null) {
             throw new IllegalStateException("MapMorphAPI not initialized");
         }
-        plugin.getMapChangeListener().registerCallback(callback);
+        plugin.getMapChangeListener().registerCallback((net.mythofy.mapMorph.api.MapChangeCallback) callback);
     }
     
     /**
@@ -156,7 +167,7 @@ public class MapMorphAPI {
         if (plugin == null) {
             return;
         }
-        plugin.getMapChangeListener().unregisterCallback(callback);
+        plugin.getMapChangeListener().unregisterCallback((net.mythofy.mapMorph.api.MapChangeCallback) callback);
     }
     
     /**
@@ -169,5 +180,144 @@ public class MapMorphAPI {
             throw new IllegalStateException("MapMorphAPI not initialized");
         }
         return plugin.getMapsFolder();
+    }
+    
+    /**
+     * Gets the player data manager for map-specific stats.
+     * 
+     * @return The player data manager
+     * @throws IllegalStateException if the API is not initialized
+     */
+    public static MapPlayerData getPlayerDataManager() {
+        if (plugin == null) {
+            throw new IllegalStateException("MapMorphAPI not initialized");
+        }
+        return playerDataManager;
+    }
+    
+    /**
+     * Gets a specific stat for a player on a specific map.
+     * 
+     * @param player The player to get stats for
+     * @param mapName The map name
+     * @param statKey The key of the stat to retrieve
+     * @return The value of the stat, or null if not set
+     */
+    public static Object getPlayerMapStat(Player player, String mapName, String statKey) {
+        if (playerDataManager == null) {
+            throw new IllegalStateException("MapMorphAPI not initialized");
+        }
+        return playerDataManager.getStat(player.getUniqueId(), mapName, statKey);
+    }
+    
+    /**
+     * Sets a specific stat for a player on a specific map.
+     * 
+     * @param player The player to set stats for
+     * @param mapName The map name
+     * @param statKey The key of the stat to set
+     * @param value The value to set
+     */
+    public static void setPlayerMapStat(Player player, String mapName, String statKey, Object value) {
+        if (playerDataManager == null) {
+            throw new IllegalStateException("MapMorphAPI not initialized");
+        }
+        playerDataManager.setStat(player.getUniqueId(), mapName, statKey, value);
+    }
+    
+    /**
+     * Gets all stats for a player on a specific map.
+     * 
+     * @param player The player to get stats for
+     * @param mapName The map name
+     * @return A map of all stats for the player on the map
+     */
+    public static Map<String, Object> getAllPlayerMapStats(Player player, String mapName) {
+        if (playerDataManager == null) {
+            throw new IllegalStateException("MapMorphAPI not initialized");
+        }
+        return playerDataManager.getAllStats(player.getUniqueId(), mapName);
+    }
+    
+    /**
+     * Awards currency to a player for a map-specific action.
+     * Requires Vault or a compatible economy plugin.
+     * 
+     * @param player The player to award currency to
+     * @param amount The amount to award
+     * @param reason A description of why the currency was awarded
+     * @return True if successful, false if economy is not available
+     */
+    public static boolean awardMapCurrency(Player player, double amount, String reason) {
+        if (economyHook == null) {
+            throw new IllegalStateException("MapMorphAPI not initialized");
+        }
+        return economyHook.awardCurrency(player, amount, reason);
+    }
+    
+    /**
+     * Registers a map-specific reward for an action.
+     * 
+     * @param mapName The map name to associate the reward with
+     * @param actionName The action that triggers this reward
+     * @param amount The amount to reward
+     */
+    public static void registerMapReward(String mapName, String actionName, double amount) {
+        if (economyHook == null) {
+            throw new IllegalStateException("MapMorphAPI not initialized");
+        }
+        economyHook.registerReward(mapName, actionName, amount);
+    }
+    
+    /**
+     * Triggers a registered reward for a player.
+     * 
+     * @param player The player to reward
+     * @param mapName The map name
+     * @param actionName The action name
+     * @return True if the reward was found and applied, false otherwise
+     */
+    public static boolean triggerMapReward(Player player, String mapName, String actionName) {
+        if (economyHook == null) {
+            throw new IllegalStateException("MapMorphAPI not initialized");
+        }
+        return economyHook.triggerReward(player, mapName, actionName);
+    }
+
+    /**
+     * Registers a plugin as an integration with MapMorph.
+     * This allows the plugin to receive extra notifications and data.
+     * 
+     * @param plugin The plugin to register
+     * @param integrationName A unique name for this integration
+     * @return True if registered successfully, false otherwise
+     */
+    public static boolean registerPluginIntegration(Plugin plugin, String integrationName) {
+        if (integrationManager == null) {
+            throw new IllegalStateException("MapMorphAPI not initialized");
+        }
+        return integrationManager.registerIntegration(plugin, integrationName);
+    }
+    
+    /**
+     * Checks if extended features are enabled.
+     * 
+     * @return True if extended features are enabled, false otherwise
+     */
+    public static boolean areExtensionsEnabled() {
+        return plugin != null && playerDataManager != null && economyHook != null && integrationManager != null;
+    }
+    
+    /**
+     * Interface for map change callbacks.
+     */
+    public interface MapChangeCallback {
+        /**
+         * Called when a map is changed.
+         * 
+         * @param mapName The name of the new map
+         * @param previousMap The name of the previous map, or null if none
+         */
+        void onMapChange(String mapName, String previousMap);
     }
 }

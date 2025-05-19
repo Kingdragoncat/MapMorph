@@ -40,8 +40,11 @@ public class FaweSchematicPaster {
      * @param onComplete  Callback to run after paste is complete
      */
     public static void pasteSchematicAsync(Plugin plugin, File schematic, String worldName, Location origin, Consumer<Boolean> onComplete) {
-        // Call the more advanced method with default parameters
-        pasteSchematicWithCountdown(plugin, schematic, worldName, origin, null, 0, onComplete);
+        // Get default countdown from config
+        int defaultCountdown = plugin.getConfig().getInt("schematics.default-countdown", 5);
+        
+        // Call the more advanced method with parameters from config
+        pasteSchematicWithCountdown(plugin, schematic, worldName, origin, null, defaultCountdown, onComplete);
     }
 
     /**
@@ -83,24 +86,56 @@ public class FaweSchematicPaster {
                         }
                     }
                     runCountdown(plugin, playersInRegion, countdown, () -> {
-                        // Fade-to-black (blindness) for 2 seconds
-                        for (Player player : playersInRegion) {
-                            player.addPotionEffect(new PotionEffect(PotionEffectType.BLINDNESS, 40, 1, false, false, false));
+                        // Check if fade effect is enabled in config
+                        boolean useFadeEffect = true; // default
+                        if (plugin instanceof MapMorph) {
+                            useFadeEffect = ((MapMorph) plugin).getConfig().getBoolean("schematics.use-fade-effect", true);
+                        }
+                        
+                        if (useFadeEffect) {
+                            // Fade-to-black (blindness) for 2 seconds
+                            for (Player player : playersInRegion) {
+                                player.addPotionEffect(new PotionEffect(PotionEffectType.BLINDNESS, 40, 1, false, false, false));
+                            }
+                        }
+                    
+                        // Check if teleport is enabled in config
+                        boolean teleportPlayers = true; // default
+                        if (plugin instanceof MapMorph) {
+                            teleportPlayers = ((MapMorph) plugin).getConfig().getBoolean("schematics.teleport-players", true);
+                        }
+                        
+                        if (teleportPlayers) {
+                            // Teleport players to safe location
+                            Location safe = safeLoc != null ? safeLoc : bukkitWorld.getSpawnLocation();
+                            
+                            // Get message from config if possible
+                            String teleportMessage = "§eYou were moved to safety for a map update!";
+                            if (plugin instanceof MapMorph) {
+                                teleportMessage = ((MapMorph) plugin).getConfig().getString("schematics.transition-message", teleportMessage)
+                                        .replace("&", "§"); // Convert color codes
+                            }
+                            
+                            for (Player player : playersInRegion) {
+                                player.teleport(safe);
+                                player.sendMessage(teleportMessage);
+                            }
                         }
 
-                        // Teleport players to safe location
-                        Location safe = safeLoc != null ? safeLoc : bukkitWorld.getSpawnLocation();
-                        for (Player player : playersInRegion) {
-                            player.teleport(safe);
-                            player.sendMessage("§eYou were moved to safety for a map update!");
+                        // Check if entity clearing is enabled in config
+                        boolean clearEntities = true; // default
+                        if (plugin instanceof MapMorph) {
+                            clearEntities = ((MapMorph) plugin).getConfig().getBoolean("schematics.clear-entities", true);
                         }
-
-                        // Remove dropped items in the region
-                        List<Entity> items = bukkitWorld.getEntities().stream()
-                                .filter(e -> e instanceof Item && isInRegion(e.getLocation(), min, max))
-                                .collect(Collectors.toCollection(ArrayList::new));
-                        for (Entity item : items) {
-                            item.remove();
+                        
+                        if (clearEntities) {
+                            // Remove dropped items in the region
+                            List<Entity> items = bukkitWorld.getEntities().stream()
+                                    .filter(e -> e instanceof Item && isInRegion(e.getLocation(), min, max))
+                                    .collect(Collectors.toCollection(ArrayList::new));
+                            for (Entity item : items) {
+                                item.remove();
+                            }
                         }
 
                         // Now paste the schematic on the main thread
@@ -147,8 +182,18 @@ public class FaweSchematicPaster {
         }
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
             int next = seconds - 1;
+            
+            // Get message format from config if possible
+            String messageFormat = "§eMap changing in §c{time}§e...";
+            if (plugin.getConfig().contains("rotation.announce-format")) {
+                messageFormat = plugin.getConfig().getString("rotation.announce-format", messageFormat)
+                        .replace("&", "§"); // Convert color codes
+            }
+            
+            String message = messageFormat.replace("{time}", String.valueOf(seconds));
+            
             for (Player player : players) {
-                player.sendActionBar("§eMap changing in §c" + seconds + "§e...");
+                player.sendActionBar(message);
                 player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1, 1);
             }
             if (next > 0) {

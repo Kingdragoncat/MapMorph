@@ -1,22 +1,317 @@
 # MapMorph configuration
+# MapMorph Configuration
+# Version 1.0
 
-# Map rotation configuration
+# General plugin settings
+general:
+  # Debug mode - prints additional information to console
+  debug: false
+  # Prefix shown in plugin messages
+  prefix: '&8[&bMapMorph&8] &r'
+  # Whether to check for updates on startup
+  check-for-updates: true
+  # Whether to log map changes to a file
+  log-map-changes: true
+  # The file to log map changes to (relative to plugin folder)
+  log-file: 'map-history.log'
+
+# Schematic/WorldEdit options
+schematics:
+  # Whether to use FAWE (Fast Async WorldEdit) if available
+  use-fawe: true
+  # Default countdown time when switching maps (in seconds)
+  default-countdown: 5
+  # Whether to use a fade effect when switching maps
+  use-fade-effect: true
+  # Whether to remove entities in the area before pasting
+  clear-entities: true
+  # Whether to teleport players to safe locations during map swap
+  teleport-players: true
+  # Message shown to players during map transitions
+  transition-message: '&ePlease wait while the map changes...'
+  # Whether to announce map changes to all players
+  announce-changes: true
+  # Announcement format
+  change-announcement: '&aThe map has changed to: &e{map}'
+
+# Map rotation settings
 rotation:
-  enabled: true
-  interval_minutes: 10
-  mode: sequential # options: sequential, random, voting
+  # Rotation mode: sequential, random, or voting
+  mode: 'sequential'
+  # List of maps in rotation order (only used for sequential mode)
   maps:
-    - arena1
-    - arena2
-    - arena3
+    - 'example_map1'
+    - 'example_map2'
+    - 'example_map3'
+  # Interval between automatic map changes (in minutes, 0 to disable)
+  interval_minutes: 30
+  # Whether to continue rotation even when server is empty
+  rotate-when-empty: false
+  # Minimum players required to trigger automatic rotation
+  min-players: 1
+  # Whether to save rotation state on server shutdown
+  save-rotation-state: true
+  # Whether to skip maps that fail validation checks
+  skip-invalid-maps: true
+  # Whether to announce upcoming map changes
+  announce-upcoming: true
+  # Time before map change to announce (in seconds)
+  announce-time: 60
+  # Message format for upcoming change announcement
+  announce-format: '&eMap changing to &b{map}&e in &c{time}&e seconds!'
 
+# Map voting settings (only used if rotation mode is 'voting')
+voting:
+  # Duration of voting period (in seconds)
+  duration: 60
+  # Number of maps to select as voting options
+  options: 3
+  # Whether to include the current map as an option
+  include-current: false
+  # Cooldown before a map can appear in voting options again (in rotations)
+  cooldown: 2
+  # Whether to allow players to start a vote with command
+  player-initiated: true
+  # Permission required to start a vote (empty for no permission)
+  start-permission: 'mapmorph.vote.start'
+  # Minimum time between player-initiated votes (in minutes)
+  vote-cooldown: 5
+  # Format for vote announcement
+  vote-announcement: '&aVoting for the next map has begun! Use &e/vote <number>&a to cast your vote!'
+  # Format for vote options
+  vote-option-format: '&e{number}. &b{map}'
+  # Format for vote results
+  vote-results-format: '&aVoting results: &e{map}&a won with &6{votes}&a votes!'
+
+# WorldGuard integration
+worldguard:
+  # Whether to enable WorldGuard integration
+  enabled: true
+  # Whether to activate all regions for a map at once
+  activate-all-regions: true
+  # Default flags to set when activating a region
+  default-flags:
+    entry: 'allow'
+    exit: 'allow'
+    pvp: 'deny'
+    build: 'deny'
+  # Whether to assign region access based on team membership
+  team-regions: false
+  # Whether to restrict players to their team's regions
+  restrict-to-team-regions: false
+
+# Spawn points configuration
+spawns:
+  # Whether to teleport players to spawn points after map change
+  teleport-on-map-change: true
+  # Whether to teleport players to spawn points on join
+  teleport-on-join: true
+  # Whether to use team-based spawns if available
+  use-team-spawns: true
+  # Whether to randomize spawn selection
+  randomize-spawns: true
+  # Default message sent to players after teleportation
+  teleport-message: '&aTeleported to spawn point for map &e{map}'
+  # Whether to apply spawn protection effect
+  spawn-protection: true
+  # Duration of spawn protection (in seconds)
+  protection-duration: 5
+
+# Team configuration
+teams:
+  # Whether to enable team features
+  enabled: true
+  # Method to use for team assignment: balanced, random, permission
+  assignment-method: 'balanced'
+  # Whether to save team assignments between sessions
+  save-assignments: true
+  # Whether to announce team assignments
+  announce-assignments: true
+  # Format for team assignment announcement
+  assignment-format: '&aYou have been assigned to team &e{team}&a!'
+  # Whether to use colored names based on team
+  colored-names: true
+  # Whether to prevent team damage
+  prevent-team-damage: true
+
+# Player data configuration
+player_data:
+  # Whether to save player statistics
+  save-stats: true
+  # Whether to track kills, deaths, and other basic stats automatically
+  track-basic-stats: true
+  # Storage method: yaml, mysql, sqlite
+  storage-method: 'yaml'
+  # Whether to show stats in a scoreboard
+  show-scoreboard: true
+  # Auto-save interval (in minutes)
+  save-interval: 5
+  # Whether to reset stats on new map load
+  reset-on-map-change: false
+  # Whether to show leaderboards
+  enable-leaderboards: true
+  # Number of players to show on leaderboards
+  leaderboard-size: 10
+  # Whether to save player locations when switching maps
+  save-locations: true
+  # Default stats to track for all maps
+  default-stats:
+    - kills
+    - deaths
+    - wins
+    - playtime
+  # MySQL database configuration (if using mysql storage)
+  mysql:
+    host: 'localhost'
+    port: 3306
+    database: 'mapmorph'
+    username: 'root'
+    password: 'password'
+    table-prefix: 'mm_'
+
+# Economy integration (requires Vault)
+economy:
+  # Whether to enable economy features
+  enabled: true
+  # Whether to award money for various actions
+  award-rewards: true
+  # Default currency symbol
+  currency-symbol: '$'
+  # Whether to announce rewards in chat
+  announce-rewards: true
+  # Format for reward announcements
+  reward-format: '&a+{amount}{currency} &7- {reason}'
+  # Default rewards configuration
+  default-rewards:
+    kill: 10.0
+    win: 100.0
+    participation: 20.0
+  # Map-specific reward multipliers (default: 1.0)
+  map-multipliers:
+    example_map1: 1.5
+    example_map2: 1.0
+    example_map3: 2.0
+
+# Plugin integration settings
+integrations:
+  # Whether to enable integration with other plugins
+  enabled: true
+  # Whether to enable PlaceholderAPI integration
+  placeholderapi: true
+  # Auto-register compatibility with these plugins if found
+  auto-register:
+    - 'WorldEdit'
+    - 'WorldGuard'
+    - 'Vault'
+    - 'PlaceholderAPI'
+    - 'LuckPerms'
+  # Hooks for specific plugins
+  hooks:
+    # Whether to enable Discord integration (via DiscordSRV)
+    discord: false
+    # Whether to sync with a database
+    database-sync: false
+
+# Command execution on map events
+commands:
+  # Whether to run commands on map events
+  enabled: true
+  # Maximum commands to run per event (to prevent abuse)
+  max-commands-per-event: 10
+  # Delay between command executions (in ticks)
+  command-delay: 5
+
+# Maps configuration (example - will be extended by using /mapmorph setspawn etc.)
 maps:
-  # Example map configuration
+  example_map1:
+    # Display name shown to players
+    display-name: '&bExample Map 1'
+    # Description of the map
+    description: 'This is an example map configuration'
+    # Relative path to schematic file
+    schematic: 'example_map1.schem'
+    # World where this map should be loaded
+    world: 'world'
+    # Origin coordinates for pasting the schematic
+    origin:
+      x: 0
+      y: 64
+      z: 0
+    # List of WorldGuard regions associated with this map
+    regions:
+      - 'example_map1_region'
+    # Spawn points for this map
+    spawns:
+      '1':
+        world: 'world'
+        x: 10.5
+        y: 65.0
+        z: 10.5
+        yaw: 0.0
+        pitch: 0.0
+      '2':
+        world: 'world'
+        x: -10.5
+        y: 65.0
+        z: -10.5
+        yaw: 180.0
+        pitch: 0.0
+    # Team configuration for this map
+    teams:
+      red:
+        display-name: '&cRed Team'
+        color: 'RED'
+        spawns:
+          '1':
+            world: 'world'
+            x: 20.5
+            y: 65.0
+            z: 0.5
+            yaw: 90.0
+            pitch: 0.0
+      blue:
+        display-name: '&9Blue Team'
+        color: 'BLUE'
+        spawns:
+          '1':
+            world: 'world'
+            x: -20.5
+            y: 65.0
+            z: 0.5
+            yaw: -90.0
+            pitch: 0.0
+    # Commands to run on different map events
+    commands:
+      on-load:
+        - 'time set day'
+        - 'weather clear'
+      on-unload:
+        - 'kill @e[type=item]'
+      on-enter:
+        - 'effect give {player} speed 5 1'
+      on-leave:
+        - 'message {player} Thanks for playing on {map}!'
+    # Map-specific settings that override global settings
+    settings:
+      pvp: true
+      fall-damage: false
+      build: false
+      time-limit: 10 # in minutes, 0 for no limit
+    # Custom map metadata for other plugins or custom functionality
+    metadata:
+      difficulty: 'medium'
+      author: 'MapMorph Team'
+      version: '1.0'
+
+  # Example arena map
   arena1:
+    # Display name shown to players
+    display-name: '&bArena 1'
+    # Description of the map
+    description: 'PvP Arena Map'
     # Map event commands
     commands:
       on-load:
-        - "say Map {map} loaded!"
         - "weather clear"
       on-enter:
         - "title {player} title Welcome to {map}!"
@@ -27,6 +322,8 @@ maps:
         - "say Map {map} closed!"
     teams:
       red:
+        display-name: '&cRed Team'
+        color: 'RED'
         spawns:
           1:
             world: world
@@ -43,6 +340,8 @@ maps:
             yaw: 0.0
             pitch: 0.0
       blue:
+        display-name: '&9Blue Team'
+        color: 'BLUE'
         spawns:
           1:
             world: world

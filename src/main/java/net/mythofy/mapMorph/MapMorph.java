@@ -2,6 +2,7 @@ package net.mythofy.mapMorph;
 
 import net.mythofy.mapMorph.api.MapChangeEvent;
 import net.mythofy.mapMorph.api.MapMorphAPI;
+import net.mythofy.mapMorph.extensions.MapPlayerData;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.configuration.ConfigurationSection;
@@ -23,6 +24,9 @@ public final class MapMorph extends JavaPlugin {
 
     @Override
     public void onEnable() {
+        // Save the default configuration
+        saveDefaultConfig();
+        
         // Initialize the API with this plugin instance
         try {
             // Try to initialize the API (static method)
@@ -38,9 +42,20 @@ public final class MapMorph extends JavaPlugin {
         } else {
             getLogger().severe("Command 'mapmorph' not found in plugin.yml!");
         }
-
-        // Ensure config file exists
-        saveDefaultConfig();
+    
+        // Load prefix from config
+        String configPrefix = getConfig().getString("general.prefix", "&8[&bMapMorph&8] &r");
+        // You can use this prefix in messages throughout the plugin
+        
+        // Create a player_data folder
+        File playerDataFolder = new File(getDataFolder(), "player_data");
+        if (!playerDataFolder.exists()) {
+            if (playerDataFolder.mkdirs()) {
+                getLogger().info("Created player_data folder at: " + playerDataFolder.getAbsolutePath());
+            } else {
+                getLogger().warning("Failed to create player_data folder at: " + playerDataFolder.getAbsolutePath());
+            }
+        }
 
         // Ensure /maps/ folder exists
         mapsFolder = new File(getDataFolder(), "maps");
@@ -52,6 +67,9 @@ public final class MapMorph extends JavaPlugin {
             }
         }
 
+        // Display ASCII logo in console
+        printASCIILogo();
+        
         // Set up PlaceholderAPI extension if available
         if (Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI")) {
             getLogger().info("PlaceholderAPI found, registering expansion...");
@@ -209,5 +227,32 @@ public final class MapMorph extends JavaPlugin {
      */
     public String getCurrentMap() {
         return currentMap;
+    }
+    
+    /**
+     * Prints the MapMorph ASCII logo to the console
+     */
+    private void printASCIILogo() {
+        String[] logo = {
+            "\n _____ ______   ________  ________        _____ ______   ________  ________  ________  ___  ___         ",
+            "|\\   _ \\  _   \\|\\   __  \\|\\   __  \\      |\\   _ \\  _   \\|\\   __  \\|\\   __  \\|\\   __  \\|\\  \\|\\  \\        ",
+            "\\ \\  \\\\\\__\\ \\  \\ \\  \\|\\  \\ \\  \\|\\  \\     \\ \\  \\\\\\__\\ \\  \\ \\  \\|\\  \\ \\  \\|\\  \\ \\  \\ \\  \\|\\  \\ \\  \\\\\\  \\       ",
+            " \\ \\  \\\\|__| \\  \\ \\   __  \\ \\   ____\\     \\ \\  \\\\|__| \\  \\ \\  \\\\\\  \\ \\   _  _\\ \\   ____\\ \\   __  \\      ",
+            "  \\ \\  \\    \\ \\  \\ \\  \\ \\  \\ \\  \\___|      \\ \\  \\    \\ \\  \\ \\  \\\\\\  \\ \\  \\\\  \\ \\  \\___|\\n \\ \\  \\ \\  \\     ",
+            "   \\ \\__\\    \\ \\__\\ \\__\\ \\__\\ \\__\\          \\ \\__\\    \\ \\__\\ \\_______\\ \\__\\\\ _\\\\ \\__\\    \\ \\__\\ \\__\\    ",
+            "    \\|__|     \\|__|\\|__|\\|__|\\|__|           \\|__|     \\|__|\\|_______|\\|__|\\|__|\\|__|     \\|__|\\|__|    ",
+            ""
+        };
+        
+        // Print each line of the ASCII logo
+        for (String line : logo) {
+            getLogger().info("\u00A7b" + line); // Aqua color in console
+        }
+        
+        getLogger().info("\u00A7aMapMorph " + getDescription().getVersion() + " enabled!");
+    }
+
+    public MapPlayerData getPlayerDataManager() {
+        return null;
     }
 }

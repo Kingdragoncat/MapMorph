@@ -1,6 +1,6 @@
 name: MapMorph
 version: '1.2'
-main: net.mythofy.mapmorph.MapMorph
+main: net.mythofy.mapMorph.MapMorph
 api-version: '1.20'
 authors: [ Kingdragoncat ]
 description: Bukkit plugin for map morphing with FAWE, WorldEdit, and WorldGuard
