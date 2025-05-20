@@ -4,6 +4,7 @@ import net.mythofy.mapMorph.api.MapChangeEvent;
 import net.mythofy.mapMorph.api.MapMorphAPI;
 import net.mythofy.mapMorph.extensions.MapPlayerData;
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -12,9 +13,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
-import java.util.function.Supplier;
 
-// Initialize the static API
 public final class MapMorph extends JavaPlugin {
 
     private File mapsFolder;
@@ -38,7 +37,10 @@ public final class MapMorph extends JavaPlugin {
         
         // Register /mapmorph command
         if (this.getCommand("mapmorph") != null) {
-            this.getCommand("mapmorph").setExecutor(new MapMorphCommand(this));
+            MapMorphCommand commandExecutor = new MapMorphCommand(this);
+            this.getCommand("mapmorph").setExecutor(commandExecutor);
+            this.getCommand("mapmorph").setTabCompleter(new MapMorphTabCompleter(this));
+            getLogger().info("Commands registered successfully");
         } else {
             getLogger().severe("Command 'mapmorph' not found in plugin.yml!");
         }
@@ -234,22 +236,27 @@ public final class MapMorph extends JavaPlugin {
      */
     private void printASCIILogo() {
         String[] logo = {
-            "\n _____ ______   ________  ________        _____ ______   ________  ________  ________  ___  ___         ",
-            "|\\   _ \\  _   \\|\\   __  \\|\\   __  \\      |\\   _ \\  _   \\|\\   __  \\|\\   __  \\|\\   __  \\|\\  \\|\\  \\        ",
-            "\\ \\  \\\\\\__\\ \\  \\ \\  \\|\\  \\ \\  \\|\\  \\     \\ \\  \\\\\\__\\ \\  \\ \\  \\|\\  \\ \\  \\|\\  \\ \\  \\ \\  \\|\\  \\ \\  \\\\\\  \\       ",
-            " \\ \\  \\\\|__| \\  \\ \\   __  \\ \\   ____\\     \\ \\  \\\\|__| \\  \\ \\  \\\\\\  \\ \\   _  _\\ \\   ____\\ \\   __  \\      ",
-            "  \\ \\  \\    \\ \\  \\ \\  \\ \\  \\ \\  \\___|      \\ \\  \\    \\ \\  \\ \\  \\\\\\  \\ \\  \\\\  \\ \\  \\___|\\n \\ \\  \\ \\  \\     ",
-            "   \\ \\__\\    \\ \\__\\ \\__\\ \\__\\ \\__\\          \\ \\__\\    \\ \\__\\ \\_______\\ \\__\\\\ _\\\\ \\__\\    \\ \\__\\ \\__\\    ",
-            "    \\|__|     \\|__|\\|__|\\|__|\\|__|           \\|__|     \\|__|\\|_______|\\|__|\\|__|\\|__|     \\|__|\\|__|    ",
+            "",
+            "\u00A7b  __  __          __  __              _    ",
+            "\u00A7b |  \\/  |__ _ _ |  \\/  |___ _ _ _ __ | |_  ",
+            "\u00A7b | |\\/| / _` | ' \\| |\\/| / _ \\ '_| '_ \\  _|",
+            "\u00A7b |_|  |_\\__,_|_||_|_|  |_\\___/_| | .__/\\__|",
+            "\u00A7b                                 |_|       ",
             ""
         };
         
         // Print each line of the ASCII logo
         for (String line : logo) {
-            getLogger().info("\u00A7b" + line); // Aqua color in console
+            getLogger().info(line);
         }
         
-        getLogger().info("\u00A7aMapMorph " + getDescription().getVersion() + " enabled!");
+        getLogger().info("\u00A7bMapMorph \u00A77v" + getDescription().getVersion() + "\u00A78 - \u00A77by Kingdragoncat");
+        getLogger().info("");
+    }
+    
+    // Additional helper method to check if a map exists
+    public boolean mapExists(String mapName) {
+        return getConfig().contains("maps." + mapName);
     }
 
     public MapPlayerData getPlayerDataManager() {

@@ -1,17 +1,76 @@
 name: MapMorph
-version: '1.2'
+version: '${project.version}'
 main: net.mythofy.mapMorph.MapMorph
-api-version: '1.20'
-authors: [ Kingdragoncat ]
-description: Bukkit plugin for map morphing with FAWE, WorldEdit, and WorldGuard
-depend: [WorldEdit, WorldGuard, FastAsyncWorldEdit]
-softdepend: [PlaceholderAPI]
+api-version: '1.13'
+author: Kingdragoncat
+description: A powerful map rotation plugin with WorldEdit and WorldGuard integration
+website: https://github.com/Kingdragoncat/MapMorph
+
+softdepend: [WorldEdit, WorldGuard, FastAsyncWorldEdit, PlaceholderAPI]
+
 commands:
   mapmorph:
-    description: Main command for MapMorph plugin.
-    usage: /<command>
-    permission: mapmorph.use
+    description: Main command for MapMorph plugin
+    usage: /<command> [help|list|info|create|delete|teleport|setspawn|addregion|removeregion|reload|rotate|rollback|version]
+    aliases: [mm, mapm]
+    permission: mapmorph.command.use
+
 permissions:
-  mapmorph.use:
-    description: Allows use of MapMorph commands.
+  mapmorph.command.use:
+    description: Allows using the basic MapMorph commands
+    default: true
+  
+  mapmorph.command.list:
+    description: Allows listing all available maps
+    default: true
+    
+  mapmorph.command.info:
+    description: Allows viewing information about maps
+    default: true
+    
+  mapmorph.admin.create:
+    description: Allows creating new maps
     default: op
+    
+  mapmorph.admin.delete:
+    description: Allows deleting maps
+    default: op
+    
+  mapmorph.admin.teleport:
+    description: Allows teleporting to maps
+    default: op
+    
+  mapmorph.admin.setspawn:
+    description: Allows setting spawn points for maps
+    default: op
+    
+  mapmorph.admin.regions:
+    description: Allows managing WorldGuard regions for maps
+    default: op
+    
+  mapmorph.admin.reload:
+    description: Allows reloading the plugin configuration
+    default: op
+    
+  mapmorph.admin.rotate:
+    description: Allows rotating maps
+    default: op
+    
+  mapmorph.admin.rollback:
+    description: Allows rolling back to previous maps
+    default: op
+    
+  mapmorph.admin:
+    description: Grants all administrative permissions
+    default: op
+    children:
+      mapmorph.admin.create: true
+      mapmorph.admin.delete: true
+      mapmorph.admin.teleport: true
+      mapmorph.admin.setspawn: true
+      mapmorph.admin.regions: true
+      mapmorph.admin.reload: true
+      mapmorph.admin.rotate: true
+      mapmorph.admin.rollback: true
+      mapmorph.command.list: true
+      mapmorph.command.info: true
